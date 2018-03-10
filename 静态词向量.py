@@ -20,7 +20,7 @@ def _read_words(filename):
 
 
 # 函数对字典对象，先按value(频数)降序，频数相同的单词再按key(单词)升序。函数返回的是字典对象，key为单词，value为对应的唯一的编号
-def _build_vocab(filename,vocab_size):
+def _build_vocab(filename, vocab_size):
     data = _read_words(filename)
     # Counter类的目的是用来跟踪值出现的次数。它是一个无序的容器类型，以字典的键值对形式存储，其中元素作为key，其计数作为value。计数值可以是任意的Interger（包括0和负数）
     counter = collections.Counter(data)
@@ -33,23 +33,24 @@ def _build_vocab(filename,vocab_size):
     # 返回值：是一个经过排序的可迭代类型，与iterable一样。
     # 这里key中去负值为了倒叙，由高到低
     count_pairs = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
-    count_pairs =count_pairs[:vocab_size-1]
+    count_pairs = count_pairs[:vocab_size-1]
     # zip函数接受任意多个（包括0个和1个）序列作为参数，返回一个tuple列表
     words, _ = list(zip(*count_pairs))
     word_to_id = dict(zip(words, range(len(words))))
     return word_to_id
 
+
 # 把单词文件转化为单词id
 def _file_to_word_ids(filename, word_to_id):
     file = open(filename, 'r', encoding='utf-8')
     lines = list(file.readlines())
-    data=[]
-    vocab_size=len(word_to_id)
+    data = []
+    vocab_size = len(word_to_id)
     for i in range(len(lines)):
-        line=lines[i].split('/')
+        line = lines[i].split('/')
         result = zeros(len(line), int32)
         for i in range(len(line)):
-            if (line[i] in word_to_id):
+            if line[i] in word_to_id:
                 result[i] = word_to_id[line[i]]
             else:
                 result[i] = vocab_size-1
@@ -74,36 +75,7 @@ def get_data(data_path=None, vocab_size=30000):
     test_label_data = list(file.readlines())
     file.close()
     vocabulary = len(word_to_id)
-    return train_input_data, train_label_data, test_input_data,test_label_data, vocabulary
-
-
-class Config(object):
-    vector_len = 200  # 词向量的长度 = Kernel的 宽度
-    epoch_num = 5  # 整个文本循环次数
-    keep_prob = 0.5  # 用于dropout，每批数据输入时神经网络中的每个单元会以1-keep_prob的概率不工作，可以防止过拟合
-    vocab_size = 30000  # 词典规模，总共10K个词
-    conv_padding = "VALID"  # 定义卷积的类型；SAME是等卷积
-    kernel = [[5,64],
-            # [4,48],
-            # [3,32],
-            # [2,16],
-            # [1,8],
-            ]
-    # kernel = [height, num], the width is the length of word vector, which is 200
-    fc_num = 300  # 定义隐藏层神经元数量
-    class_num = 28  # 定义类别数量
-    learn_rate = 0.0001  # 定义学习率
-    print_interval = 3000  # 每隔多少轮训练输出一次结果
-
-    data_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/"  # "D:/python/textclassfier/text/data_fenci/finalData/"
-    log_path = "/Users/apple/Desktop/NLP/textclassfier/log/log.txt"  # "D:/python/textclassfier/log/log.txt"
-    summary_path = "/Users/apple/Desktop/NLP/textclassfier/summary/"  # "D:/python/textclassfier/summary/"
-    word2vec_model_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/word2vec_model"  # "D:/python/textclassfier/text/data_fenci/finalData/word2vec_model"
-
-    # data_path= "/home/xmxie/caoyananGroup/zdj/textClassfy/data/"
-    # log_path="/home/xmxie/caoyananGroup/zdj/textClassfy/log/log.txt"
-    # summary_path = "/home/xmxie/caoyananGroup/zdj/textClassfy/summary/"
-    # word2vec_model_path="/home/xmxie/caoyananGroup/zdj/textClassfy/model/word2vec_model"
+    return train_input_data, train_label_data, test_input_data, test_label_data, vocabulary
 
 
 def weight_variable(shape):
@@ -140,10 +112,11 @@ def add_conv_layer(config,kernel_height,kernel_num,input):
 
 
 def run():
-    with tf.name_scope("input_layer"):
-        x_ = tf.placeholder(tf.int32, [None], name="x_")
     config = Config()
     mylog = open(config.log_path, 'a', encoding='utf-8')  # 'a' = append: append the log
+
+    with tf.name_scope("input_layer"):
+        x_ = tf.placeholder(tf.int32, [None], name="x_")
 
     with tf.name_scope("embedding_layer"):
         with tf.device("/cpu:0"):
@@ -175,7 +148,7 @@ def run():
         # Reshape the input [1, kernel_num]
         input_fc1 = tf.reshape(output_max_pool, [1, kernel_num])
         h_fc1 = tf.nn.elu(tf.matmul(input_fc1, W_fc1) + b_fc1)  # matmul: one-to-one multiply for 2 vectors
-        # Perform dropout
+        # Perform dropout to avoid over-fitting
         output_fc1_drop = tf.nn.dropout(h_fc1, config.keep_prob)
 
     # The final softmax layer then receives this feature vector as input and uses it to classify the sentence
@@ -185,18 +158,24 @@ def run():
         b_sfm = bias_variable([config.class_num])
         y_output = tf.nn.softmax(tf.matmul(output_fc1_drop, W_sfm) + b_sfm)  # [1，28]
         tf.summary.histogram("y_output", y_output)
+
     with tf.name_scope("label"):
-      y_ = tf.placeholder(tf.float32, [None])
-      y_=tf.reshape(y_,[1,config.class_num])
+        y_ = tf.placeholder(tf.float32, [None])
+        y_ = tf.reshape(y_, [1, config.class_num])
+
     with tf.name_scope("loss"):
-       cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_output + 1e-10), reduction_indices=[1]))
-       tf.summary.scalar("cross_entropy", cross_entropy)
+        cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y_output + 1e-10), reduction_indices=[1]))
+        tf.summary.scalar("cross_entropy", cross_entropy)
+
     with tf.name_scope("train"):
-       train_step = tf.train.AdamOptimizer(config.learn_rate).minimize(cross_entropy)
+        # Adam Optimizer is used to train the parameter
+        train_step = tf.train.AdamOptimizer(config.learn_rate).minimize(cross_entropy)
+
     with tf.name_scope("accuracy"):
         correct_prediction = tf.equal(tf.argmax(y_output, 1), tf.argmax(y_, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         tf.summary.histogram("accuracy", accuracy)
+
     sess = tf.InteractiveSession()
     summary_merge = tf.summary.merge_all()
     if int((tf.__version__).split('.')[1]) < 12 and int(
@@ -211,10 +190,10 @@ def run():
     # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
     # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
     print("不预先训练词向量方式")
-    mylog.write("不预先训练词向量方式" +  "\n")
+    mylog.write("不预先训练词向量方式" + "\n")
     print("迭代次数： ", config.epoch_num)
     mylog.write("迭代次数： " + str(config.epoch_num) + "\n")
-    mylog.flush()
+    mylog.flush()  # Call this method to make sure that all pending events have been written to disk.
     print("向量维度： ", config.vector_len)
     mylog.write("向量维度： " + str(config.vector_len) + "\n")
     mylog.flush()
@@ -240,45 +219,77 @@ def run():
     mylog.write("全连接层dropout：  " + str(config.keep_prob) + "\n")
     mylog.flush()
 
-    train_input_data, train_label_data, test_input_data, test_label_data, vocabulary = get_data(config.data_path, config.vocab_size)
-    max_kernel_height = 0;
+    train_input_data, train_label_data, test_input_data, test_label_data, vocabulary \
+        = get_data(config.data_path, config.vocab_size)
+    max_kernel_height = 0
     for i in range(len(config.kernel)):
-        if (config.kernel[i][1] > max_kernel_height):
+        if config.kernel[i][1] > max_kernel_height:
             max_kernel_height = config.kernel[i][1]
     for i in range(config.epoch_num):
-      train_accuracy = 0.0
-      for j in range(len(train_input_data)):
-        train_input_line=train_input_data[j]
-        if (len(train_input_line) <= max_kernel_height):
-            continue
-        train_output_line = zeros([1,config.class_num], int32);
-        index = int(train_label_data[j])
-        train_output_line[0,index-1] = 1;
-        train_accuracy = train_accuracy+accuracy.eval(feed_dict={
-            x_: train_input_line, y_: train_output_line})
-        if j % config.print_interval == 0:
-          trac=train_accuracy/(j+1);
-          print("第 %d次迭代，第 %d 轮，训练平均准确率为： %g" % (i+1,j, trac))
-          mystr="第 %d次迭代，第 %d 轮，训练平均准确率为： %g\n" % (i+1,j, trac)
-          mylog.write(mystr)
-          mylog.flush()
-          result_summary=sess.run(summary_merge,feed_dict={x_: train_input_line, y_: train_output_line})
-          writer.add_summary(result_summary,j)
-        train_step.run(feed_dict={x_: train_input_line, y_: train_output_line})
-      final_accuracy = 0;
-      for j in range(len(test_input_data)):
-          test_input_line = test_input_data[j]
-          if (len(test_input_line) <= max_kernel_height):
-              continue
-          test_output_line = zeros([1, config.class_num], int32)
-          index = int(test_label_data[j])
-          test_output_line[0, index - 1] = 1
-          final_accuracy = final_accuracy + accuracy.eval(
-              feed_dict={x_: test_input_line, y_: test_output_line})
-      print("第 %d 次迭代，测试平均准确率： %g" % (i + 1, final_accuracy / len(test_input_data)))
 
-      mylog.write("第 %d 次迭代，测试平均准确率： %g" % (i + 1, final_accuracy / len(test_input_data)))
-      mylog.flush()
+        train_accuracy = 0.0
+
+        for j in range(len(train_input_data)):
+            train_input_line = train_input_data[j]
+            if len(train_input_line) <= max_kernel_height:
+                continue
+            train_output_line = zeros([1, config.class_num], int32)  # the output is the [1,28] of all 0s
+            index = int(train_label_data[j])
+            train_output_line[0, index-1] = 1  # Set 1 at the index of the label
+            train_step.run(feed_dict={x_: train_input_line, y_: train_output_line})
+            train_accuracy = train_accuracy + accuracy.eval(feed_dict={x_: train_input_line, y_: train_output_line})
+            if j % config.print_interval == 0:
+                trac = train_accuracy/(j+1)
+                print("第 %d次迭代，第 %d 轮，训练平均准确率为： %g" % (i+1, j, trac))
+                mystr = "第 %d次迭代，第 %d 轮，训练平均准确率为： %g\n" % (i+1, j, trac)
+                mylog.write(mystr)
+                mylog.flush()
+                result_summary = sess.run(summary_merge, feed_dict={x_: train_input_line, y_: train_output_line})
+                writer.add_summary(result_summary, j)
+
+        final_accuracy = 0
+
+        for j in range(len(test_input_data)):
+            test_input_line = test_input_data[j]
+            if len(test_input_line) <= max_kernel_height:
+                continue
+            test_output_line = zeros([1, config.class_num], int32)  # the output is the [1,28] of all 0s
+            index = int(test_label_data[j])
+            test_output_line[0, index - 1] = 1
+            final_accuracy = final_accuracy + accuracy.eval(feed_dict={x_: test_input_line, y_: test_output_line})
+
+        print("第 %d 次迭代，测试平均准确率： %g" % (i + 1, final_accuracy / len(test_input_data)))
+        mylog.write("第 %d 次迭代，测试平均准确率： %g" % (i + 1, final_accuracy / len(test_input_data)))
+        mylog.flush()
+
+
+class Config(object):
+    vector_len = 200  # 词向量的长度 = Kernel的 宽度
+    epoch_num = 13  # 整个文本循环次数
+    keep_prob = 0.5  # 用于dropout，每批数据输入时神经网络中的每个单元会以1-keep_prob的概率不工作，可以防止过拟合
+    vocab_size = 30000  # 词典规模，总共10K个词
+    conv_padding = "VALID"  # 定义卷积的类型；SAME是等卷积
+    kernel = [[5, 64],
+              # [4, 48],
+              # [3, 32],
+              # [2, 16],
+              # [1, 8],
+              ]
+    # kernel = [height, num], the width is the length of word vector, which is 200
+    fc_num = 300  # 定义隐藏层神经元数量
+    class_num = 28  # 定义类别数量
+    learn_rate = 0.0001  # 定义学习率
+    print_interval = 3000  # 每隔多少轮训练输出一次结果
+
+    data_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/"  # "D:/python/textclassfier/text/data_fenci/finalData/"
+    log_path = "/Users/apple/Desktop/NLP/textclassfier/log/log.txt"  # "D:/python/textclassfier/log/log.txt"
+    summary_path = "/Users/apple/Desktop/NLP/textclassfier/summary/"  # "D:/python/textclassfier/summary/"
+    word2vec_model_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/word2vec_model"  # "D:/python/textclassfier/text/data_fenci/finalData/word2vec_model"
+
+    # data_path= "/home/xmxie/caoyananGroup/zdj/textClassfy/data/"
+    # log_path="/home/xmxie/caoyananGroup/zdj/textClassfy/log/log.txt"
+    # summary_path = "/home/xmxie/caoyananGroup/zdj/textClassfy/summary/"
+    # word2vec_model_path="/home/xmxie/caoyananGroup/zdj/textClassfy/model/word2vec_model"
 
 
 run()
