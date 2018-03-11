@@ -113,7 +113,6 @@ def add_conv_layer(config,kernel_height,kernel_num,input):
 
 def run():
     config = Config()
-    mylog = open(config.log_path, 'a', encoding='utf-8')  # 'a' = append: append the log
 
     with tf.name_scope("input_layer"):
         x_ = tf.placeholder(tf.int32, [None], name="x_")
@@ -134,11 +133,11 @@ def run():
             # 每次循环把每种卷积核的所有reduced_max_feature连锁起来形成 max_pool_layer
             output_convs.append(add_conv_layer(config, config.kernel[i][0], config.kernel[i][1], input_vector))
             # Concatenate the features generated from each kind of kernel
-            output_max_pool = tf.concat(output_convs, 2)
+            output_max_pool = tf.concat(output_convs, 2)  # Dim = [batch_size, in_height, in_width, in_channels]; 2 is width
         tf.summary.histogram("output_max_pool", output_max_pool)
 
     with tf.name_scope("full_connect_layer"):
-        kernel_num = 0;
+        kernel_num = 0
         # Calculate the total number of kernel, which is the total number of features input into full connect layer
         for i in range(len(config.kernel)):
             kernel_num = kernel_num + config.kernel[i][1]
@@ -176,19 +175,8 @@ def run():
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         tf.summary.histogram("accuracy", accuracy)
 
-    sess = tf.InteractiveSession()
-    summary_merge = tf.summary.merge_all()
-    if int((tf.__version__).split('.')[1]) < 12 and int(
-            (tf.__version__).split('.')[0]) < 1:  # tensorflow version < 0.12
-        writer = tf.train.SummaryWriter(config.summary_path, sess.graph)
-        init = tf.initialize_all_variables()
-    else:  # tensorflow version >= 0.12
-        writer = tf.summary.FileWriter(config.summary_path, sess.graph)
-        init = tf.global_variables_initializer()
 
-    sess.run(init)
-    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-    # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
+    mylog = open(config.log_path, 'a', encoding='utf-8')  # 'a' = append: append the log
     print("不预先训练词向量方式")
     mylog.write("不预先训练词向量方式" + "\n")
     print("迭代次数： ", config.epoch_num)
@@ -218,6 +206,19 @@ def run():
     print("全连接层dropout：  ", config.keep_prob)
     mylog.write("全连接层dropout：  " + str(config.keep_prob) + "\n")
     mylog.flush()
+
+    sess = tf.InteractiveSession()
+    summary_merge = tf.summary.merge_all()
+    if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:  # tensorflow version < 0.12
+        writer = tf.train.SummaryWriter(config.summary_path, sess.graph)
+        init = tf.initialize_all_variables()
+    else:  # tensorflow version >= 0.12
+        writer = tf.summary.FileWriter(config.summary_path, sess.graph)
+        init = tf.global_variables_initializer()
+
+    sess.run(init)
+    # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+    # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
 
     train_input_data, train_label_data, test_input_data, test_label_data, vocabulary \
         = get_data(config.data_path, config.vocab_size)
@@ -281,10 +282,10 @@ class Config(object):
     learn_rate = 0.0001  # 定义学习率
     print_interval = 3000  # 每隔多少轮训练输出一次结果
 
-    data_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/"  # "D:/python/textclassfier/text/data_fenci/finalData/"
-    log_path = "/Users/apple/Desktop/NLP/textclassfier/log/log.txt"  # "D:/python/textclassfier/log/log.txt"
-    summary_path = "/Users/apple/Desktop/NLP/textclassfier/summary/"  # "D:/python/textclassfier/summary/"
-    word2vec_model_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/word2vec_model"  # "D:/python/textclassfier/text/data_fenci/finalData/word2vec_model"
+    data_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/"
+    log_path = "/Users/apple/Desktop/NLP/textclassfier/log/log.txt"
+    summary_path = "/Users/apple/Desktop/NLP/textclassfier/summary/"
+    word2vec_model_path = "/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/word2vec_model"
 
     # data_path= "/home/xmxie/caoyananGroup/zdj/textClassfy/data/"
     # log_path="/home/xmxie/caoyananGroup/zdj/textClassfy/log/log.txt"
