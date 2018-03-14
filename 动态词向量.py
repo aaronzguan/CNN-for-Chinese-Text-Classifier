@@ -176,6 +176,7 @@ def run():
             train_output_line = zeros([1, config.class_num], int32)
             index = int(train_label_data[j])
             train_output_line[0, index-1] = 1
+            train_step.run(feed_dict={x_: train_input_vector, y_: train_output_line})
             train_accuracy = train_accuracy+accuracy.eval(feed_dict={x_: train_input_vector, y_: train_output_line})
             if j % config.print_interval == 0:
                 trac = train_accuracy/(j+1)
@@ -185,7 +186,7 @@ def run():
                 mylog.flush()
                 result_summary = sess.run(summary_merge, feed_dict={x_: train_input_vector, y_: train_output_line})
                 writer.add_summary(result_summary, j)
-            train_step.run(feed_dict={x_: train_input_vector, y_: train_output_line})
+
         final_accuracy = 0
         for j in range(len(test_input_data)):
             test_output_line = test_input_data[j].split('/')

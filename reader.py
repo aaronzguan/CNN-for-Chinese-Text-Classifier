@@ -103,7 +103,7 @@ def replaceUnknown(filename):
         fileOutput.write(newline + "\n")
 
 
-replaceUnknown("/Users/apple/Desktop/NLP/textclassfier/alldata/toutiaoshuju.txt")
+replaceUnknown("/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/allData.txt")
 # 把文本读取为一个一个的词
 sentences = word2vec.Text8Corpus(u"/Users/apple/Desktop/NLP/textclassfier/text/data_fenci/finalData/replaceUnknown.txt")  # D:/python/textclassfier/text/data_fenci/finalData/replaceUnknown.txt
 # iter: like training epochs, how many times the training code will run through the data set to train the neural network

@@ -7,12 +7,14 @@ import re
 import string
 import fileinput
 
-rootdir = "D:/python/textclassfier/text/newdata/"
+rootdir = "/Users/apple/Desktop/NLP/textclassfier/text/newdata/"
 jieba.load_userdict("/Users/apple/Desktop/NLP/textclassfier/dic/default.dic")  # "D:/python/textclassfier/dic/default.dic"
+print("Jieba dic is loaded")
 
 # 创建停用词表
 stopword = [line.strip() for line in open('/Users/apple/Desktop/NLP/textclassfier/stopword/stopwords.txt', 'r', encoding='utf-8').readlines()]  # D:/python/textclassfier/stopword/stopwords.txt
 stopword = set(stopword)
+print('停用词读取完毕，共{n}个词'.format(n=len(stopword)))
 n = 0
 for parent, dirnames, filenames in os.walk(rootdir):    # 三个参数：分别返回1.父目录 2.所有文件夹名字（不含路径） 3.所有文件名字
     for dirname in dirnames:                       # 输出文件夹信息
@@ -32,7 +34,7 @@ for parent, dirnames, filenames in os.walk(rootdir):    # 三个参数：分别�
             # print(len(words))
             for item in range(len(words)):
                 # re.sub("[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", words[item-deleteNum])  # 中文标点
-                # words[item - deleteNum]=words[item-deleteNum].translate(string.punctuation)
+                # words[item - deleteNum] = words[item-deleteNum].translate(string.punctuation)
                 if words[item-deleteNum] in stopword or len(re.sub("[\u4e00-\u9fa5]+", "", words[item - deleteNum])) > 0:
                     del words[item-deleteNum]
                     deleteNum = deleteNum + 1
